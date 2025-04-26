@@ -52,6 +52,16 @@ export default function Sidebar({ onVideoSelect }) {
                 <p className="text-xs text-gray-400">
                   {video.snippet.channelTitle}
                 </p>
+                <p className="text-xs text-gray-400 line-clamp-2">
+                  {new Date(video.snippet.publishTime).toLocaleDateString(
+                    "en-GB",
+                    {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    }
+                  )}
+                </p>
               </div>
             </div>
           );

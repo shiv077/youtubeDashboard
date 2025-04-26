@@ -233,16 +233,11 @@ export default function VideoPlayer({ videoId, videoKey }) {
 
   function createPlayer() {
     if (!iframeContainerRef.current) return;
-
     if (player) player.destroy();
 
     const newPlayer = new window.YT.Player(iframeContainerRef.current, {
       videoId,
-      playerVars: {
-        controls: 0,
-        modestbranding: 1,
-        rel: 0,
-      },
+      playerVars: { controls: 0, modestbranding: 1, rel: 0 },
       events: {
         onReady: (event) => {
           const totalDuration = event.target.getDuration();
@@ -268,7 +263,6 @@ export default function VideoPlayer({ videoId, videoKey }) {
 
   useEffect(() => {
     if (playerReady && player && typeof player.seekTo === "function") {
-      // player.seekTo(trimStart);
       setCurrentTime(trimStart);
     }
   }, [playerReady, videoId, trimStart]);
@@ -311,12 +305,11 @@ export default function VideoPlayer({ videoId, videoKey }) {
     }
   };
 
-  const handleMouseMove = (e) => {
+  const updateTrim = (clientX) => {
     if (!draggingHandle || !duration) return;
-
     const bar = document.getElementById("trim-bar");
     const rect = bar.getBoundingClientRect();
-    const x = e.clientX - rect.left;
+    const x = clientX - rect.left;
     const percent = Math.max(0, Math.min(1, x / rect.width));
     const time = percent * duration;
 
@@ -327,13 +320,32 @@ export default function VideoPlayer({ videoId, videoKey }) {
     }
   };
 
-  const handleMouseUp = () => {
-    setDraggingHandle(null);
+  const handleMouseMove = (e) => {
+    updateTrim(e.clientX);
+  };
 
-    localStorage.setItem(
-      `trim-${videoKey}`,
-      JSON.stringify({ start: trimStart, end: trimEnd })
-    );
+  const handleTouchMove = (e) => {
+    updateTrim(e.touches[0].clientX);
+  };
+
+  const handleMouseUp = () => {
+    if (draggingHandle) {
+      setDraggingHandle(null);
+      localStorage.setItem(
+        `trim-${videoKey}`,
+        JSON.stringify({ start: trimStart, end: trimEnd })
+      );
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (draggingHandle) {
+      setDraggingHandle(null);
+      localStorage.setItem(
+        `trim-${videoKey}`,
+        JSON.stringify({ start: trimStart, end: trimEnd })
+      );
+    }
   };
 
   const formatTime = (seconds) => {
@@ -356,6 +368,8 @@ export default function VideoPlayer({ videoId, videoKey }) {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       <div className="w-full aspect-video bg-black max-w-4xl mx-auto">
         <div ref={iframeContainerRef} className="w-full h-full"></div>
@@ -399,12 +413,14 @@ export default function VideoPlayer({ videoId, videoKey }) {
           className="absolute top-1/2 w-5 h-5 bg-white border-2 border-gray-600 rounded-full cursor-ew-resize transform -translate-x-1/2 -translate-y-1/2"
           style={{ left: `${(trimStart / duration) * 100}%` }}
           onMouseDown={() => setDraggingHandle("start")}
+          onTouchStart={() => setDraggingHandle("start")}
         ></div>
 
         <div
           className="absolute top-1/2 w-5 h-5 bg-white border-2 border-gray-600 rounded-full cursor-ew-resize transform -translate-x-1/2 -translate-y-1/2"
           style={{ left: `${(trimEnd / duration) * 100}%` }}
           onMouseDown={() => setDraggingHandle("end")}
+          onTouchStart={() => setDraggingHandle("end")}
         ></div>
       </div>
     </div>
@@ -429,7 +445,6 @@ function PlayIcon() {
     </svg>
   );
 }
-
 function PauseIcon() {
   return (
     <svg
